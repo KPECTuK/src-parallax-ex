@@ -1,214 +1,194 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.XR.iOS;
+using UnityEngine.XR.ARFoundation;
 
-// script for setting up ARKit for 3D head tracking purposes
+/// <summary> script for setting up ARKit for 3D head tracking purposes </summary>
+public class HeadTrackManager : MonoBehaviour
+{
+	public enum OpenEye
+	{
+		Left,
+		Right
+	}
 
-public class HeadTrackManager : MonoBehaviour {
-
-	[SerializeField]
-	private GameObject headCenter;
-
-	//public Light keylight;
+	public GameObject headCenter;
 	public CameraManager camManager;
-
-	private UnityARSessionNativeInterface m_session;
-
-	Dictionary<string, float> currentBlendShapes;
-
-	public float leftEyeClosed = 0f;
-	public float rightEyeClosed = 0f;
-
-	public enum OpenEye { Left, Right };
-	[System.NonSerialized]
-	public OpenEye openEye = OpenEye.Right;
-	bool autoEye = false;
-
-	public string eyeInfoText; // little status, which eye is being tracked, auto or not
-	public float IPD = 64f; // inter pupil distance (mm)
-	public float EyeHeight = 32f; // eye height from head anchor (mm)
-
+	public float leftEyeClosed;
+	public float rightEyeClosed;
+	// which eye is being tracked, auto or not
+	public string eyeInfoText;
+	// inter pupil distance (mm)
+	public float IPD = 64f;
+	// eye height from head anchor (mm)
+	public float EyeHeight = 32f;
 	public string ARError;
 
-	public void SetIPD( float value ) {
-		IPD = value;
-	}
-		
-	public void SetEyeHeight( float value ) {
-		EyeHeight = value;
-	}
+	[NonSerialized]
+	public OpenEye openEye = OpenEye.Right;
+	private bool _autoEye;
 
+	public void Start()
+	{
+		ARError = string.Empty;
 
-	// Use this for initialization
-	public void Start () {
+		var session = FindObjectOfType<ARSession>();
+		var faceManager = FindObjectOfType<ARFaceManager>();
 
-		// first try to get camera acess
-		//yield return RequestCamera ();
+		faceManager.facesChanged += OnFaceChanged;
 
-		ARError = null;
-
-		m_session = UnityARSessionNativeInterface.GetARSessionNativeInterface();
-
-		UnityARSessionNativeInterface.ARSessionFailedEvent += CatchARSessionFailed;
+		//UnityARSessionNativeInterface.ARSessionFailedEvent += CatchARSessionFailed;
+		ARSession.stateChanged += _ => { Debug.Log($"AR session state: {_.state}"); };
 
 		Application.targetFrameRate = 60;
-		ARKitFaceTrackingConfiguration config = new ARKitFaceTrackingConfiguration();
-		//config.alignment = UnityARAlignment.UnityARAlignmentGravity; // using gravity alignment enables orientation (3DOF) tracking of device camera. we don't need it
-		config.alignment = UnityARAlignment.UnityARAlignmentCamera;
+		//ARKitFaceTrackingConfiguration config = new ARKitFaceTrackingConfiguration();
+		////config.alignment = UnityARAlignment.UnityARAlignmentGravity; // using gravity alignment enables orientation (3DOF) tracking of device camera. we don't need it
+		//config.alignment = UnityARAlignment.UnityARAlignmentCamera;
 
-		config.enableLightEstimation = true;
+		//config.enableLightEstimation = true;
 
+		//if(config.IsSupported)
+		//{
+		//	m_session.RunWithConfig(config);
 
-		if (config.IsSupported) {
-			
-			m_session.RunWithConfig (config);
-
-			UnityARSessionNativeInterface.ARFaceAnchorAddedEvent += FaceAdded;
-			UnityARSessionNativeInterface.ARFaceAnchorUpdatedEvent += FaceUpdated;
-			UnityARSessionNativeInterface.ARFaceAnchorRemovedEvent += FaceRemoved;
-			//UnityARSessionNativeInterface.ARFrameUpdatedEvent += FrameUpdate; //can't get the light direction estimate to work for some reason, it freezes the app
-		} else {
-			Debug.Log ("ARKitFaceTrackingConfiguration not supported");
-		}
-
+		//	UnityARSessionNativeInterface.ARFaceAnchorAddedEvent += FaceAdded;
+		//	UnityARSessionNativeInterface.ARFaceAnchorUpdatedEvent += FaceUpdated;
+		//	UnityARSessionNativeInterface.ARFaceAnchorRemovedEvent += FaceRemoved;
+		//	// can't get the light direction estimate to work for some reason, it freezes the app
+		//	//UnityARSessionNativeInterface.ARFrameUpdatedEvent += FrameUpdate; 
+		//}
+		//else
+		//{
+		//	Debug.Log("ARKitFaceTrackingConfiguration not supported");
+		//}
 	}
 
-	void CatchARSessionFailed (string error) {
-		//Debug.Log ("AR session failed. Error: " + error);
+	private void CatchARSessionFailed(string error)
+	{
 		ARError = error;
 	}
 
+	private void UpdateLocationByFace(ARFace face, Transform target)
+	{
+		var pos = face.fixationPoint.position;
+		var rot = face.fixationPoint.rotation;
 
-	/* // this doesn't help at all
-	IEnumerator RequestCamera() {
-		yield return Application.RequestUserAuthorization(UserAuthorization.WebCam);
-		if (Application.HasUserAuthorization(UserAuthorization.WebCam)) {
-			Debug.Log ("Camera granted");
-		} else {
-			Debug.Log ("Camera denied");
+		if(camManager.DeviceCamUsed)
+		{
+			// use device camera
+			// in device cam viewing mode, don't invert on x because this view is mirrored
+			target.SetPositionAndRotation(
+				pos,
+				rot);
+		}
+		else
+		{
+			// use device camera
+			// invert on x because ARFaceAnchors are inverted on x (to mirror in display)
+			target.SetPositionAndRotation(
+				new Vector3(-pos.x, pos.y, pos.z),
+				new Quaternion(-rot.x, rot.y, rot.z, -rot.w));
 		}
 	}
-*/
 
-
-
-
-	void FaceAdded (ARFaceAnchor anchorData)
+	private void OnFaceChanged(ARFacesChangedEventArgs args)
 	{
-		Vector3 pos = UnityARMatrixOps.GetPosition (anchorData.transform);
-		Quaternion rot =  UnityARMatrixOps.GetRotation (anchorData.transform);
 
-		if (camManager.DeviceCamUsed) {
-			headCenter.transform.position = pos; // in device cam viewing mode, don't invert on x because this view is mirrored
-			headCenter.transform.rotation = rot;
-		} else {
-			// invert on x because ARfaceAnchors are inverted on x (to mirror in display)
-			headCenter.transform.position = new Vector3 (-pos.x, pos.y, pos.z); 
-			headCenter.transform.rotation = new Quaternion( -rot.x, rot.y, rot.z, -rot.w); 
-		}
-
-		headCenter.SetActive (true);
-
-		currentBlendShapes = anchorData.blendShapes;
 	}
 
-	void FaceUpdated (ARFaceAnchor anchorData)
+	private void FaceAdded(ARFace face)
 	{
-		Vector3 pos = UnityARMatrixOps.GetPosition (anchorData.transform);
-		Quaternion rot =  UnityARMatrixOps.GetRotation (anchorData.transform);
+		UpdateLocationByFace(face, headCenter.transform);
+		headCenter.SetActive(true);
 
-		if (camManager.DeviceCamUsed) {
-			headCenter.transform.position = pos; // in device cam viewing mode, don't invert on x because this view is mirrored
-			headCenter.transform.rotation = rot;
-		} else {
-			// invert on x because ARfaceAnchors are inverted on x (to mirror in display)
-			headCenter.transform.position = new Vector3 (-pos.x, pos.y, pos.z);
-			headCenter.transform.rotation = new Quaternion( -rot.x, rot.y, rot.z, -rot.w);
-		}
+		// _currentBlendShapes = anchorData.blendShapes;
+	}
 
-		currentBlendShapes = anchorData.blendShapes;
+	private void FaceUpdate(ARFace face)
+	{
+		UpdateLocationByFace(face, headCenter.transform);
+		// _currentBlendShapes = anchorData.blendShapes;
 
-		if (autoEye) {
+		var logBlink = string.Empty;
 
-			if (currentBlendShapes.ContainsKey ("eyeBlink_L")) { // of course, eyeBlink_L refers to the RIGHT eye! (mirrored geometry)
-				rightEyeClosed = currentBlendShapes ["eyeBlink_L"];
-			}
+		if(_autoEye)
+		{
+			//?face.updated
 
-			if (currentBlendShapes.ContainsKey ("eyeBlink_R")) {
-				leftEyeClosed = currentBlendShapes ["eyeBlink_R"];
-			}
-				
-			//string str = string.Format ("L={0:#.##} R={1:#.##}", leftEyeClosed, rightEyeClosed);
-			//eyeInfoText = str;
-		
+			//if(_currentBlendShapes.ContainsKey("eyeBlink_L"))
+			//{
+			//	// mirrored geometry
+			//	rightEyeClosed = _currentBlendShapes["eyeBlink_L"];
+			//	logBlink = "blink: right eye";
+			//}
+
+			//if(_currentBlendShapes.ContainsKey("eyeBlink_R"))
+			//{
+			//	// mirrored geometry
+			//	leftEyeClosed = _currentBlendShapes["eyeBlink_R"];
+			//	logBlink = "blink: left eye";
+			//}
+
 			// these values seem to be in the 0.2 .. 0.7 range.. 
 			// but sometimes, when viewing the phone low in the visual field, they get very high even while open (eyelids almost close)
 			// we'll use a difference metric and if exceeded we select the most open eye
 
-			if (Mathf.Abs (rightEyeClosed - leftEyeClosed) > 0.2f) {
-				if (rightEyeClosed > leftEyeClosed) 
-					openEye = OpenEye.Left;
-				else 
-					openEye = OpenEye.Right;
+			if(Mathf.Abs(rightEyeClosed - leftEyeClosed) > 0.2f)
+			{
+				openEye = rightEyeClosed > leftEyeClosed
+					? OpenEye.Left
+					: OpenEye.Right;
 			}
 
-			/* // old method
-			if (rightEyeClosed > 0.5 && leftEyeClosed < 0.5)
-				openEye = OpenEye.Left;
+			// old method
+			//if rightEyeClosed > 0.5 && leftEyeClosed < 0.5)
+			//	openEye = OpenEye.Left;
+			//if(rightEyeClosed < 0.5 && leftEyeClosed > 0.5)
+			//	openEye = OpenEye.Right;
+		}
 
-			if (rightEyeClosed < 0.5 && leftEyeClosed > 0.5)
-				openEye = OpenEye.Right;*/
-		} 
-
-		string str;
-		if (openEye == OpenEye.Left)
-			str = "Left Eye";
-		else 
-			str = "Right Eye";
-
-		if (autoEye)
-			eyeInfoText = "Auto: " + str;
-		else 
-			eyeInfoText = str;
+		var logAuto = _autoEye ? "auto" : string.Empty;
+		var logSide = openEye == OpenEye.Left ? "left" : "right";
+		eyeInfoText = $"{logAuto}: {logSide} Eye ({logBlink})";
 	}
 
-	void FaceRemoved (ARFaceAnchor anchorData)
+	private void FaceRemove(ARFace face)
 	{
-		headCenter.SetActive (false);
-		string str = "Lost Eye Tracking";
-		eyeInfoText = str;
+		headCenter.SetActive(false);
+		eyeInfoText = "eye was lost";
 	}
 
-	void FrameUpdate(UnityARCamera cam)
+	private void FrameUpdate()
 	{
 		//can't get the light direction estimate to work for some reason, it freezes the app
 		//keylight.transform.rotation = Quaternion.FromToRotation(Vector3.back, cam.lightData.arDirectonalLightEstimate.primaryLightDirection); // <- probably incorrect way to do it
 		//keylight.transform.rotation = Quaternion.LookRotation(cam.lightData.arDirectonalLightEstimate.primaryLightDirection); // <- probably correct way to do it
 	}
 
-
-	// Update is called once per frame
-	void Update () {
-		
-	}
-
-	void OnDestroy()
+	public void SetEyeHeight(float value)
 	{
-		
+		EyeHeight = value;
 	}
 
-	public void SetLeftEye() {
-		autoEye = false;
+	public void SetIPD(float value)
+	{
+		IPD = value;
+	}
+
+	public void SetLeftEye()
+	{
+		_autoEye = false;
 		openEye = OpenEye.Left;
 	}
 
-	public void SetRightEye() {
-		autoEye = false;
+	public void SetRightEye()
+	{
+		_autoEye = false;
 		openEye = OpenEye.Right;
 	}
 
-	public void SetAutoEye() {
-		autoEye = true;
+	public void SetAutoEye()
+	{
+		_autoEye = true;
 	}
 }

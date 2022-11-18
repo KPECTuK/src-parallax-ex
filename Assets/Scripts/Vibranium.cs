@@ -1,9 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-public class Vibranium : MonoBehaviour {
-
+public class Vibranium : MonoBehaviour
+{
 	public GameObject sphere;
 	public int noSpheresX = 20;
 	public int noSpheresY = 3;
@@ -22,65 +20,73 @@ public class Vibranium : MonoBehaviour {
 	public Material mat2;
 	public Material mat3;
 
+	private GameObject[] _spheres;
 
-	GameObject [] spheres;
+	private void Start()
+	{
+		_spheres = new GameObject[noSpheresX * noSpheresY * noSpheresZ];
+		var i = 0;
+		for(var x = 0; x < noSpheresX; x++)
+		{
+			for(var y = 0; y < noSpheresY; y++)
+			{
+				for(var z = 0; z < noSpheresZ; z++)
+				{
+					_spheres[i] = Instantiate(sphere, transform);
+					_spheres[i].transform.localPosition = new Vector3(x, y, z);
+					_spheres[i].transform.localScale = new Vector3(size, size, size);
 
-	// Use this for initialization
-	void Start () {
-		spheres = new GameObject[noSpheresX * noSpheresY * noSpheresZ];
-		int i = 0;
-		for (int x = 0; x < noSpheresX; x++) {
-			for (int y = 0; y < noSpheresY; y++) {
-				for (int z = 0; z < noSpheresZ; z++) {
-					spheres [i] = Instantiate (sphere, this.transform);
-					spheres [i].transform.localPosition = new Vector3 (x, y, z);
-					spheres [i].transform.localScale = new Vector3 (size, size, size);
-
-
-					if (z<2) 
-						spheres [i].GetComponent<Renderer> ().material = mat3;
-					else if (z<5) 
-						spheres [i].GetComponent<Renderer> ().material = mat2;
-					else 
-						spheres [i].GetComponent<Renderer> ().material = mat1;
+					if(z < 2)
+					{
+						_spheres[i].GetComponent<Renderer>().material = mat3;
+					}
+					else if(z < 5)
+					{
+						_spheres[i].GetComponent<Renderer>().material = mat2;
+					}
+					else
+					{
+						_spheres[i].GetComponent<Renderer>().material = mat1;
+					}
 
 					i++;
 				}
 			}
-		}		
+		}
 	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-		int i = 0;
 
-		for (int x = 0; x < noSpheresX; x++) {
-			for (int y = 0; y < noSpheresY; y++) {
-				for (int z = 0; z < noSpheresZ; z++) {
+	private void Update()
+	{
+		var i = 0;
 
-					Vector3 pos = new Vector3 (x, y, z);
+		for(var x = 0; x < noSpheresX; x++)
+		{
+			for(var y = 0; y < noSpheresY; y++)
+			{
+				for(var z = 0; z < noSpheresZ; z++)
+				{
+					var pos = new Vector3(x, y, z);
 
-					pos.x += ampPerlin * Perlin.Noise (x*freqPerlin + speedPerlin*Time.time, y*freqPerlin, z*freqPerlin);
-					pos.y += ampPerlin * Perlin.Noise (x*freqPerlin + speedPerlin*Time.time, y*freqPerlin, z*freqPerlin + 13.2f);
-					pos.z += ampPerlin * Perlin.Noise (x*freqPerlin + speedPerlin*Time.time, y*freqPerlin, z*freqPerlin + 49.9f);
+					pos.x += ampPerlin * VfxPerlin.Noise(x * freqPerlin + speedPerlin * Time.time, y * freqPerlin, z * freqPerlin);
+					pos.y += ampPerlin * VfxPerlin.Noise(x * freqPerlin + speedPerlin * Time.time, y * freqPerlin, z * freqPerlin + 13.2f);
+					pos.z += ampPerlin * VfxPerlin.Noise(x * freqPerlin + speedPerlin * Time.time, y * freqPerlin, z * freqPerlin + 49.9f);
 
-					float scaleP = 1f + sizePerlin * Perlin.Noise (x*freqPerlin + speedPerlin*Time.time, y*freqPerlin, z*freqPerlin + 121.3f);
+					var scaleP = 1f + sizePerlin * VfxPerlin.Noise(x * freqPerlin + speedPerlin * Time.time, y * freqPerlin, z * freqPerlin + 121.3f);
 
-					pos.x += (0.9f*scaleP+0.1f)*ampVibrate*(Mathf.Sin( speedVibrate * Time.time + phaseVibrate*i));
-					pos.y += (0.9f*scaleP+0.1f)*ampVibrate*(Mathf.Cos( speedVibrate * Time.time + phaseVibrate*i));
-					pos.z += (0.9f*scaleP+0.1f)*ampVibrate*(Mathf.Cos( speedVibrate * Time.time + 0.5f*Mathf.PI + phaseVibrate*i));
+					pos.x += (0.9f * scaleP + 0.1f) * ampVibrate * Mathf.Sin(speedVibrate * Time.time + phaseVibrate * i);
+					pos.y += (0.9f * scaleP + 0.1f) * ampVibrate * Mathf.Cos(speedVibrate * Time.time + phaseVibrate * i);
+					pos.z += (0.9f * scaleP + 0.1f) * ampVibrate * Mathf.Cos(speedVibrate * Time.time + 0.5f * Mathf.PI + phaseVibrate * i);
 
-					spheres [i].transform.localPosition = pos;
+					_spheres[i].transform.localPosition = pos;
 
-					Vector3 scale = new Vector3 (size, size, size);
+					var scale = new Vector3(size, size, size);
 					scale *= scaleP;
 
-					spheres [i].transform.localScale = scale;
+					_spheres[i].transform.localScale = scale;
 
 					i++;
 				}
 			}
-		}		
+		}
 	}
 }

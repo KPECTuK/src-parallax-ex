@@ -1,18 +1,11 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-public class LookFromHead : MonoBehaviour {
-
+public class LookFromHead : MonoBehaviour
+{
 	public Transform head;
 
-	// Use this for initialization
-	void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		this.gameObject.transform.rotation = Quaternion.LookRotation (-head.position);	
+	private void Update()
+	{
+		gameObject.transform.rotation = Quaternion.LookRotation(-head.position);
 	}
 }

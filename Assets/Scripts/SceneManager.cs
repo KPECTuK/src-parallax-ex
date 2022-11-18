@@ -1,73 +1,82 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
-// little scene manager to report the scene names to the UI, and set active scene
-
-public class SceneManager : MonoBehaviour {
-
-	List<GameObject> Scenes;
+/// <summary> report the scene names to the UI, and set active scene </summary>
+public class SceneManager : MonoBehaviour
+{
 	public Light headLight;
 	public Material TheVoidMaterial;
 	public Camera EyeCam;
-	public PostBlur pblur;
+	public VfxPostBlur pblur;
 
-	// Use this for initialization
-	void Awake () { // Awake is called before Start, so we know this has been done when UIManager calls us from its Start()
-		Scenes = new List<GameObject>();
+	private List<GameObject> _scenes;
+
+	private void Awake()
+	{
+		_scenes = new List<GameObject>();
 
 		foreach(Transform child in transform)
 		{
-			SceneInfo si = child.GetComponent<SceneInfo> ();
-			if (si.use)
-				Scenes.Add (child.gameObject);
+			var info = child.GetComponent<SceneInfo>();
+			if(info.use)
+			{
+				_scenes.Add(child.gameObject);
+			}
 			else
-				child.gameObject.SetActive (false); // make sure unused scenes are off
-		}
-	}
-
-	public int GetNoScenes() {
-		return Scenes.Count;
-	}
-
-	public string GetSceneName(int SceneNo) {
-		return Scenes [SceneNo].GetComponent<SceneInfo> ().sceneName;
-	}
-
-	public void SetActiveScene(int SceneNo) {
-		for (int i = 0; i < Scenes.Count; i++) {
-			SceneInfo si = Scenes [i].GetComponent<SceneInfo> ();
-			if (i == SceneNo) {
-				Scenes [i].SetActive (true);
-				RenderSettings.ambientLight = si.ambientLight;
-				headLight.gameObject.SetActive (si.headLight);
-				EyeCam.backgroundColor = si.bgColor;
-
-				if (SceneNo == 3) { // hack! this should be part of scene info
-					pblur.enabled = true;
-					pblur.Activate();
-				} else {
-					pblur.DeActivate ();
-					pblur.enabled = false;
-				}
-
-			} else {
-				Scenes [i].SetActive (false);
+			{
+				child.gameObject.SetActive(false);
 			}
 		}
 	}
 
-	// kinda hacky, just sets the brightness of one scene: "the void"
-	public void TheVoidSetBrightness( float value ) {
-		// 0.33 is default, means white albedo
-
-		float b = 3.0f * value;
-		Color col = new Color (b, b, b, 1f);
-		TheVoidMaterial.color = col;
+	public int GetNoScenes()
+	{
+		return _scenes.Count;
 	}
 
-	// Update is called once per frame
-	void Update () {
-		
+	public string GetSceneName(int sceneNo)
+	{
+		return _scenes[sceneNo].GetComponent<SceneInfo>().sceneName;
+	}
+
+	public void SetActiveScene(int sceneNo)
+	{
+		for(var index = 0; index < _scenes.Count; index++)
+		{
+			var info = _scenes[index].GetComponent<SceneInfo>();
+			if(index == sceneNo)
+			{
+				_scenes[index].SetActive(true);
+				RenderSettings.ambientLight = info.ambientLight;
+				headLight.gameObject.SetActive(info.headLight);
+				EyeCam.backgroundColor = info.bgColor;
+
+				//! this should be part of scene info
+				if(sceneNo == 3)
+				{
+					pblur.enabled = true;
+					pblur.Activate();
+				}
+				else
+				{
+					pblur.DeActivate();
+					pblur.enabled = false;
+				}
+			}
+			else
+			{
+				_scenes[index].SetActive(false);
+			}
+		}
+	}
+
+	/// <summary> kinda hacky, just sets the brightness of one scene: "the void" </summary>
+	public void TheVoidSetBrightness(float value)
+	{
+		// 0.33 is default, means white albedo
+
+		var b = 3.0f * value;
+		var col = new Color(b, b, b, 1f);
+		TheVoidMaterial.color = col;
 	}
 }
