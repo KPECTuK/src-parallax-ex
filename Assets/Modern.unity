@@ -137,7 +137,7 @@ GameObject:
   - component: {fileID: 328630438}
   - component: {fileID: 328630437}
   m_Layer: 0
-  m_Name: AR Camera
+  m_Name: ar_cam_device
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -256,7 +256,7 @@ GameObject:
   - component: {fileID: 906711925}
   - component: {fileID: 906711924}
   m_Layer: 0
-  m_Name: AR Session
+  m_Name: ar_session
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -391,7 +391,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1907254277}
   m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
-  m_LocalPosition: {x: 0, y: 3, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -409,8 +409,9 @@ GameObject:
   - component: {fileID: 2120935367}
   - component: {fileID: 2120935366}
   - component: {fileID: 2120935368}
+  - component: {fileID: 2120935369}
   m_Layer: 0
-  m_Name: AR Session Origin
+  m_Name: ar_origin_trackables
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -460,3 +461,17 @@ MonoBehaviour:
   m_FacePrefab: {fileID: 7803280267255589658, guid: 6cb664c6ab6144046903d15a27763708,
     type: 3}
   m_MaximumFaceCount: 1
+--- !u!114 &2120935369
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2120935365}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db36abc8fae533b45aeccb9376522fb2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _trackPoint: 0
+  _cameraEye: {fileID: 0}
